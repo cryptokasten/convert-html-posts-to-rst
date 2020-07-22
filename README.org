@@ -1,0 +1,111 @@
+#+TITLE: Convert HTML posts to rst
+#+PROPERTY: header-args:python :session *shell convert-html-posts-to-rst python* :results silent raw
+
+** Imports
+
+#+BEGIN_SRC python
+import re
+import pypandoc
+#+END_SRC
+
+** Title re
+
+#+BEGIN_SRC python
+title_re = "<h1 [^>]*>(.*)</h1>"
+#+END_SRC
+
+** Body re
+
+#+BEGIN_SRC python
+body_re = "<article [^>]*>(.*)</article>"
+#+END_SRC
+
+** Load html
+
+#+BEGIN_SRC python
+def load_html(fn):
+    f = open(fn, "rt")
+    html = f.read()
+    return html
+#+END_SRC
+
+** Get element with re
+
+#+BEGIN_SRC python
+def get_elements_with_re(html, pattern):
+    return re.findall(pattern, html)
+#+END_SRC
+
+** Parse file
+
+#+BEGIN_SRC python
+def parse_file(fn):
+    html = load_html(fn)
+    title = get_elements_with_re(html, title_re)[0]
+    body = get_elements_with_re(html, body_re)[0]
+    return (title, body)
+#+END_SRC
+
+** Build souce HTML
+
+#+BEGIN_SRC python
+def build_source_html(title, body):
+    return "<h1>%s</h1>\n%s" % (title, body)
+#+END_SRC
+
+** Convert post to rst
+
+#+BEGIN_SRC python
+def convert(fn):
+    title, body = parse_file(fn)
+    source = build_source_html(title, body)
+    return pypandoc.convert_text(source, "rst", format="html")
+#+END_SRC
+
+** Convert file
+
+#+BEGIN_SRC python
+def convert_file(src_fn, dst_fn):
+    rst = convert(src_fn)
+    f = open(dst_fn, "wt")
+    f.write(rst)
+    f.close()
+#+END_SRC
+
+** HTML filename to RST filename
+
+#+BEGIN_SRC python
+def fn_html_to_rst(fn):
+    return fn.replace("html", "rst")
+#+END_SRC
+
+** Convert directory
+
+#+BEGIN_SRC python
+def convert_directory(directory, new_directory):
+    ((_, _, files),) = os.walk(directory)
+    for fn in files:
+        src_fn = os.path.join(directory, fn)
+        dst_fn = os.path.join(new_directory, fn_html_to_rst(fn))
+        try:
+            convert_file(src_fn, dst_fn)
+        except:
+            print(src_fn)
+#+END_SRC
+
+** Test one file
+
+#+BEGIN_SRC python
+src_fn = "data/post.html"
+dst_fn = "data/post.rst"
+rst = convert(src_fn)
+f = open(dst_fn, "wt")
+f.write(rst)
+f.close()
+#+END_SRC
+
+** Test convert directory
+
+#+BEGIN_SRC python
+convert_directory(src_dir, dst_dir)
+#+END_SRC
